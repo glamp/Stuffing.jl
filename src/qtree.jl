@@ -1,6 +1,6 @@
 module QTree
 export AbstractStackQtree, StackQtree, ShiftedQtree, buildqtree!,
-    shift!, setrshift!, setcshift!, setshift!, getshift, getcenter, setcenter!,
+rotate!, shift!, setrshift!, setcshift!, setshift!, getshift, getcenter, setcenter!,
     collision, collision_dfs, collision_randbfs, batchcollision,
     findroom_uniform, findroom_gathering, levelnum, outofbounds, outofkernelbounds, 
     kernelsize, place!, overlap, overlap!, decode, charimage
@@ -51,6 +51,7 @@ Base.broadcastable(t::AbstractStackQtree) = Ref(t)
 ################ StackQtree
 struct StackQtree{T <: AbstractVector{<:AbstractMatrix{UInt8}}} <: AbstractStackQtree
     layers::T
+    # pic::AbstractMatrix{UInt8}
 end
 
 StackQtree(l::T) where T = StackQtree{T}(l)
@@ -155,6 +156,7 @@ Base.size(l::PaddedMat) = l.size
 
 struct ShiftedQtree{T <: AbstractVector{<:PaddedMat}} <: AbstractStackQtree
     layers::T
+    # pic::AbstractMatrix{UInt8}
 end
 
 ShiftedQtree(l::T) where T = ShiftedQtree{T}(l)
@@ -206,6 +208,39 @@ function buildqtree!(t::ShiftedQtree, layer=2)
     end
     t
 end
+
+function rotate!(thing, angle)
+    radians = angle * π / 180
+    c = cos(radians)
+    s = sin(radians)
+    Y, X = size(thing)
+
+    rotated_thing =  zeros(UInt8, Y, X)
+
+    x0 = X / 2 - c * X / 2 - s * Y / 2
+    y0 = Y / 2 - c * Y / 2 + s * X / 2
+    for y in 1:Y
+        for x in 1:X
+            src_x =  c * x + s * y + x0 + X
+            src_y =  -s * x + c * y + y0 + Y
+            src_x = convert(Int64, round(src_x, digits=0)) % X + 1
+            src_y = convert(Int64, round(src_y, digits=0)) % Y + 1
+            rotated_thing[y, x] = thing[src_y, src_x]
+        end
+    end
+    PaddedMat(rotated_thing)
+end
+
+function rotate!(t::ShiftedQtree, l::Integer, angle::Integer)
+    # for i in l:-1:1
+    #     rotate!(t[i], angle)
+    # end
+    # buildqtree!(t, l + 1)
+    rotatedx = rotate!(t[1], angle)
+    t = ShiftedQtree(rotatedx)
+    t
+end
+
 function rshift!(t::ShiftedQtree, l::Integer, st::Integer)
     for i in l:-1:1
         rshift!(t[i], st)

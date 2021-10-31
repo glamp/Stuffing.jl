@@ -66,7 +66,7 @@ function QTree.place!(qtrees::AbstractVector{<:ShiftedQtree}, inds; karg...)
 end
 QTree.overlap!(qtrees::AbstractVector{<:ShiftedQtree}; karg...) = QTree.overlap!(qtrees[1], qtrees[2:end]; karg...)
 QTree.overlap(qtrees::AbstractVector{<:ShiftedQtree}; karg...) = QTree.overlap!(deepcopy(qtrees[1]), qtrees[2:end]; karg...)
-
+    
 function getpositions(mask::ShiftedQtree, qtrees::AbstractVector, inds=:; type=getshift)
     msy, msx = getshift(mask)
     pos = type.(qtrees[inds])

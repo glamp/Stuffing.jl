@@ -68,8 +68,17 @@ function intlog2(x::Float64) # not safe, x>0 and x can't be nan or inf
 end
 
 function move!(qt, ws)
-    if rand() < 0.1 # 破坏周期运动
+    r = rand()
+    # 10% chance this will happen
+    if r < 0.1 # 破坏周期运动
         ws = ws .+ rand(((1., -1.), (-1., 1.), (-1., -1.), (1., 1.)))
+    # 10% chance this will happen
+    elseif r < 0.2
+        angle = rand([45, 90, 135, 180, -45, -90, -135])
+        println("rotating", angle)
+        qt = rotate!(qt, -1, angle)
+        # display(qt)
+        return
     end
     if (-1 < ws[1] < 1 && -1 < ws[2] < 1) # 避免静止
         ws = rand(((1., -1.), (-1., 1.), (-1., -1.), (1., 1.)))
@@ -78,6 +87,7 @@ function move!(qt, ws)
     # @assert wm >= 1
     u = intlog2(wm)
     # @assert u == floor(Int, log2(wm))
+    # TODO: rotate here
     shift!(qt, 1 + u, (trunc.(Int, ws) .÷ 2^u)...) # 舍尾，保留最高二进制位
 end
 
@@ -224,7 +234,7 @@ function trainepoch_EM2!(qtrees::AbstractVector{<:ShiftedQtree}; memory, optimis
     end
     nc
 end
-
+    
 "element-wise trainer with LRU(more-more levels)"
 trainepoch_EM3!(;inputs) = trainepoch_EM!(;inputs=inputs)
 trainepoch_EM3!(s::Symbol) = trainepoch_EM!(s)
@@ -262,10 +272,10 @@ function trainepoch_EM3!(qtrees::AbstractVector{<:ShiftedQtree}; memory, optimis
                     batchcollision(qtrees, inds4, collist=empty!(collpool); kargs...)
                     step_inds!(qtrees, collpool, optimiser)
                     if ni4 > 2length(collpool) break end
-                end
+                    end
             end
         end
-    end
+            end
     nc
 end
 
@@ -291,7 +301,7 @@ function filttrain!(qtrees, inpool, outpool, nearlevel2; optimiser,
                 nsp1 += 1
             end
         end
-    end
+            end
     step_inds!(qtrees, collist, optimiser)
     nsp1
 end
@@ -470,6 +480,7 @@ end
 function train!(ts, nepoch::Number=-1, args...; 
     trainer=trainepoch_EM2!, patient::Number=trainer(:patient), optimiser=Momentum(η=1 / 4, ρ=0.5), 
     callbackstep=1, callbackfun=x -> x, teleporting=i -> true, resource=trainer(inputs=ts), kargs...)
+ 
     teleporton = true
     if teleporting isa Function
         on = teleporting
