@@ -17,10 +17,10 @@ m, n = size(mask)
 
 L = fill(false, 3, 3)
 L[:,3] .= true
-L[3,1] = true
+L[3,:] .= true
 # L[1,:] .= true
 objs = []
-for i in 1:15
+for i in 1:10
     push!(objs, L)
 end
 
